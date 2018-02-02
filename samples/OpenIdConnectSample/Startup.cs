@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Encodings.Web;
@@ -59,6 +60,16 @@ namespace OpenIdConnectSample
                 o.ResponseType = OpenIdConnectResponseType.CodeIdToken;
                 o.SaveTokens = true;
                 o.GetClaimsFromUserInfoEndpoint = true;
+
+                // TODO: Revert
+                var handler = new JwtSecurityTokenHandler();
+                handler.InboundClaimTypeMap.Clear();
+                o.SecurityTokenValidator = handler;
+                o.ClaimActions.Clear();
+                o.ClaimActions.MapAllClaims();
+                // Note some of these protocol claims also show up in the user info
+                o.ClaimActions.DeleteClaims("aud", "iss", "iat", "nbf", "exp", "aio", "c_hash", "uti", "nonce");
+
                 o.Events = new OpenIdConnectEvents()
                 {
                     OnAuthenticationFailed = c =>
