@@ -19,7 +19,8 @@ namespace Microsoft.AspNetCore.Authorization
         /// <param name="context">The authorization context.</param>
         public virtual async Task HandleAsync(AuthorizationHandlerContext context)
         {
-            foreach (var req in context.Requirements.OfType<TRequirement>())
+            var requirements = context.Requirements.OfType<TRequirement>().ToList();
+            foreach (var req in requirements)
             {
                 await HandleRequirementAsync(context, req);
             }
