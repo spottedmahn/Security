@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -86,6 +87,25 @@ namespace Microsoft.AspNetCore.Authorization
 
             var authContext = _contextFactory.CreateContext(requirements, user, resource);
             var handlers = await _handlers.GetHandlersAsync(authContext);
+
+            var requirementsForRegisteredHandlers = new List<Type>();
+
+            //check for handler(s) for requirement
+            foreach (var handler in handlers)
+            {
+                var type = handler.GetType();
+                var baseType = type.BaseType;
+                if (baseType.GenericTypeArguments.Length > 0)
+                {
+                    var genericType = baseType.GenericTypeArguments[0];
+                    requirementsForRegisteredHandlers.Add(genericType);
+                }
+            }
+
+            var requirementTypes = requirements.Select(h => h.GetType()).ToList();
+
+            var requirementTypesWithoutRegisteredHandlers = requirementTypes.Except(requirementsForRegisteredHandlers).ToList();
+
             foreach (var handler in handlers)
             {
                 await handler.HandleAsync(authContext);
@@ -94,6 +114,8 @@ namespace Microsoft.AspNetCore.Authorization
                     break;
                 }
             }
+
+            var anyRequirementsRun = authContext.PendingRequirements.Count() != authContext.Requirements.Count();
 
             var result = _evaluator.Evaluate(authContext);
             if (result.Succeeded)
